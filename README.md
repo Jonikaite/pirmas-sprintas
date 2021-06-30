@@ -14,5 +14,5 @@ This project is for educational porpuses only.
 - PHP
 - Github pages
 
-## Authors
+## Author
 [Sandra](https://github.com/lazauninke)

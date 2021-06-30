@@ -11,9 +11,7 @@ if (isset($_GET['action']) and $_GET['action'] == 'logout') {
     
 }
 
-
-
-// login logic
+// login
 $msg = '';
 if (isset($_POST['login']) && !empty($_POST['username']) && !empty($_POST['password'])) {
     if ($_POST['username'] == 'Sandra' && $_POST['password'] == 'sandra1') {
@@ -21,7 +19,7 @@ if (isset($_POST['login']) && !empty($_POST['username']) && !empty($_POST['passw
         $_SESSION['timeout'] = time();
         $_SESSION['username'] = $_POST['username'];
         $msg = 'You have entered valid use name and password';
-        header('Location: ./');
+        header("Location: index.php");
     } else {
         $msg = 'Wrong username or password';
     }
