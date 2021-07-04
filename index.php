@@ -1,13 +1,8 @@
 <?php
+session_start();
 
-$path = './' . $_GET['path'];
-
-if($_SESSION['logged_in'] == true){
+if(!$_SESSION['logged_in']) {
     header('Location: login.php');
-}
-
-if($_GET['Delete']){
-    unlink($path . '/' . $_GET['Delete']);
 }
 
 ?>
@@ -24,6 +19,12 @@ if($_GET['Delete']){
 </head>
 
 <body class="container">
+
+<?php 
+$path = './' . $_GET['path'];
+$dirContent = scandir($path);
+print('<h2>Directory contents: ' . $path . '</h2>');
+?>
     <div>
         <table class="table">
             <thead class="table-dark"> 
@@ -36,41 +37,134 @@ if($_GET['Delete']){
 
             <tbody> 
                 <?php  
-                $dirContent = scandir($path);
                 foreach($dirContent as $pieceOfContent){
                     print('<tr>');
                     print('<td>' . (is_dir($pieceOfContent) ? "Dir" : "File") . '</td>');
                     print('<td>' . (is_dir($path . '/' . $pieceOfContent) ? '<a href="?path=' . $pieceOfContent . '">' . $pieceOfContent . '</a></td>' : $pieceOfContent));
-                    print('<td>' . (!is_dir($pieceOfContent) ? '<a href="?delete=' . $pieceOfContent . '">Delete</a>' : '') . '</td>');
+                    print('<td>' 
+                    . (!is_dir($path . $pieceOfContent) ? 
+                    '<form style="display: inline-block" action="" method="POST">
+                    <input  type="hidden" name="delete" value=' . $pieceOfContent . '>
+                    <button id="delete" type="submit">Delete</button>
+                    </form>
+                    <form style="display: inline-block" action="" method="POST">
+                    <input type="hidden" name="download" value=' . $pieceOfContent . '>
+                    <button id="download" type="submit">Download</button>
+                   </form>'
+                    : '' 
+                    . '</td>'));
                     print('</tr>');
                 }
 
-                ?>
+//delete
+if (isset($_POST['delete'])) {
+    unlink('./' . $_GET['path'] . $_POST['delete']);
+    header("Refresh:0.1");
+}
+
+
+//download
+
+if(isset($_POST['download'])){
+    // print('Path to download: ' . './' . $_GET["path"] . $_POST['download']);
+    $file='./' . $_GET["path"] . $_POST['download'];
+    $fileToDownloadEscaped = str_replace("&nbsp;", " ", htmlentities($file, null, 'utf-8'));
+    ob_clean();
+    ob_start();
+    header('Content-Description: File Transfer');
+    header('Content-Type: application/pdf'); 
+    header('Content-Disposition: attachment; filename=' . basename($fileToDownloadEscaped));
+    header('Content-Transfer-Encoding: binary');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+    header('Pragma: public');
+    header('Content-Length: ' . filesize($fileToDownloadEscaped));
+    ob_end_flush();
+    readfile($fileToDownloadEscaped);
+    exit;
+}
+?>
+
             </tbody>
         </table>
-
     </div>
+<div>
+<!-- <INPUT TYPE="button" VALUE="Back" onClick="history.go(-1);"> -->
+</div>
     <div style="margin-top: 30px; margin-bottom: 30px ">
+    <input style="margin-bottom: 20px; display: block; width: 256px; text-decoration-line: underline;" type="button"value="Back" onClick="history.go(-1);">
         <form action="" method="post" enctype="multipart/form-data">
-            <input type="file" name="fileToUpload" id="img" style="display:none;" />
-            <button style="display: block; width: 256px" type="btton">
+            <input type="file" name="img" id="img" style="display:none;" />
+            <button style="display: block; width: 256px" type="button">
                 <label for="img" style="display: block; width: 100%">Choose file</label>
             </button>
             <button style="display: block; width: 256px" type="submit">Upload file</button>
             </form>
     </div>
+    <?php 
+
+// Upload
+if (isset($_FILES['img'])) {
+    $errors = array();
+    $file_name = $_FILES['img']['name'];
+    $file_size = $_FILES['img']['size'];
+    $file_tmp = $_FILES['img']['tmp_name'];
+    $file_type = $_FILES['img']['type'];
+
+    $file_ext = strtolower(end(explode('.', $_FILES['img']['name'])));
+    $extensions = array("jpeg", "jpg", "png");
+    if (in_array($file_ext, $extensions) === false) {
+        $errors[] = "extension not allowed, please choose a JPEG or PNG file.";
+    }
+    if ($file_size > 2097152) {
+        $errors[] = 'File size must be smaller than 2 MB';
+    }
+    if (empty($errors) == true) {
+        move_uploaded_file($file_tmp, './' . $path . './' . $file_name);
+        echo "Succes";
+        header("Refresh:0.1");
+    } else {
+        print_r($errors);
+    }
+}
+?>
+
 
     <!-- new directory -->
     <div>
         <form method="POST" style="width: 260px">
-            <input type="text" placeholder="Name of new directory" />
-            <button type="submit" name="submit">Submit</button>
+            <input type="text" id="create" name="create" placeholder="Name of new directory" />
+            <button type="submit" value="create">Submit</button>
         </form>
     </div>
 
+
+<?php
+    function create()
+    {
+        if (isset($_POST['create'])) {
+            if ($_POST['create'] === "") {
+                echo "Folder name can't be emty string!";
+            }
+            if ($_POST['create'] != "") {
+                $dirCreate = './' . $_GET['path'] . $_POST['create'];
+                if (!is_dir($dirCreate)) {
+                    mkdir($dirCreate);
+                    echo 'Success! Folder created.';
+                    header("Refresh:0.1");
+                }
+                if (is_dir($dirCreate)) {
+                    echo "Folder already exist!";
+                }
+            }
+        }
+    }
+    create();
+?>
+
 <!-- logout -->
 <div>
-Click here to <a href="index.php?action=logout"> logout.
+Click here to <a href="login.php?action=logout"> logout.
 </div>
 
 
